@@ -1,4 +1,4 @@
-# KOOK Bot SDK（自研）
+# KOOK Bot SDK
 
 不依赖 `khl` 的 KOOK 机器人通信库：**WebSocket 网关 + REST 接口全覆盖 + 原生 JSON 卡片**，全部使用中文命名与类型注解。
 
