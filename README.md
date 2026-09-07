@@ -18,8 +18,10 @@
 
 ```bash
 # 从 GitHub 安装
-pip install "git+https://github.com/<你的用户名>/kook-bot-sdk.git"
-# 或本地安装
+pip install "git+https://github.com/fashiye/kook-bot-sdk.git"
+# 或克隆后本地安装(可编辑模式)
+git clone https://github.com/fashiye/kook-bot-sdk.git
+cd kook-bot-sdk
 pip install -e .
 ```
 
