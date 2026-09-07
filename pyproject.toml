@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kook-bot-sdk"
+version = "0.1.0"
+description = "KOOK 机器人自研 SDK：REST 接口全覆盖 + WebSocket 网关 + 原生卡片，中文命名"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "aiohttp>=3.9",
+]
+
+[tool.setuptools.packages.find]
+include = ["kook库*"]
+exclude = ["tests*", "examples*"]

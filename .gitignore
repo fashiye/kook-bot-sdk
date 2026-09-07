@@ -1,0 +1,16 @@
+# Python 编译与缓存
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# 环境与密钥
+.env
+.env.*
+!.env.example
+
+# 工具/编辑器
+.reasonix/
+.idea/
+.vscode/
