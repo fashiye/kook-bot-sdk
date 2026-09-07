@@ -10,6 +10,7 @@ from .客户端 import HTTP客户端                              # KOOK REST �
 from ..模型.类型 import 消息类型, 系统事件名                 # 消息类型与系统事件名枚举
 from ..核心.网关 import 网关                                # KOOK WebSocket 网关客户端
 from ..模型.事件 import 事件, 发送器类型                     # 事件对象与便捷发送器回调类型
+from ..模型.按钮绑定 import 按钮回调中心                     # 按钮回调中心(创建即绑定语法糖)
 from ..模型.错误 import 令牌错误                            # 令牌鉴权错误
 
 
@@ -359,7 +360,19 @@ class 机器人:
             if not 信号.done() and 谓词(当前事件):
                 信号.set_result(当前事件)
         self.等待器列表 = [(匹配, 待完成) for 匹配, 待完成 in self.等待器列表 if not 待完成.done()]
-        # 再分发给注册处理器
+        # 再分发给注册处理器；若按钮点击命中了"创建时绑定的回调"则直接调用并短路，
+        # 未绑定的按钮仍走下方处理器分发(便于与 @按钮点击 等旧式路由渐进共存)。
+        if 当前事件.系统事件名 == 系统事件名.按钮点击:
+            绑定回调 = 按钮回调中心.取出(str(当前事件.主体.get("value", "")))
+            if 绑定回调 is not None:
+                try:
+                    结果 = 绑定回调(当前事件)
+                    # 兼容同步与异步两种写法：返回协程则等待其完成
+                    if asyncio.iscoroutine(结果):
+                        await 结果
+                except Exception as 异常:
+                    _logger.exception("按钮绑定回调异常(%s): %s", getattr(绑定回调, "__name__", 绑定回调), 异常)
+                return
         for 过滤集合, 处理器 in self.处理器列表:
             try:
                 if 过滤集合 is None or any(当前事件.匹配(类型) for 类型 in 过滤集合):

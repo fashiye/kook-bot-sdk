@@ -4,8 +4,10 @@ KOOK 基础卡片消息类：按官方卡片消息文档手工构建原生 JSON 
     卡 = 卡片().添加标题模块("标题").添加内容模块("正文").添加交互模块([...])
 参考文档: https://developer.kookapp.cn/doc/cardmessage
 '''
-from typing import Any                                   # 提供类型注解 Any，表示任意 JSON 值
+from typing import Any, Callable, Optional                # 提供类型注解 Any/Callable/Optional
 import json                                              # 提供 JSON 序列化，用于把卡片消息转成可发送的字符串
+
+from .按钮绑定 import 按钮回调中心                          # 按钮回调中心，供"创建即绑定回调"语法糖登记
 
 
 # 卡片/按钮主题合法取值集合，theme 为 none/invisible 时不渲染边框，取自官方文档
@@ -70,19 +72,22 @@ def 创建图片元素(图片地址: str, 替代文字: str = "", 尺寸: str = 
     return 图片元素
 
 
-def 创建按钮元素(文本: str, 值: str = "", 点击类型: str = "", 主题: str = "primary", 文本类型: str = "plain-text") -> dict[str, Any]:
+def 创建按钮元素(文本: str, 值: str = "", 点击类型: str = "", 主题: str = "primary", 文本类型: str = "plain-text",
+                回调: Optional[Callable] = None) -> dict[str, Any]:
     """
-    构造 button 按钮交互元素字典。
+    构造 button 按钮交互元素字典；可传入 回调 实现"创建即绑定"，点击后自动触发(见说明)。
     参数:
         文本: 按钮上显示的文字。
         值: 点击后回调/跳转携带的字符串值。
         点击类型: 空串为无事件；"link" 跳转到值代表的链接；"return-val" 通过按钮点击事件把值回传。
         主题: 按钮主题色，取值见卡片主题集合。
         文本类型: 按钮文字格式，只能取 plain-text 或 kmarkdown。
+        回调: 可选。绑定按钮点击的处理函数，签名 async def 处理(事件) 或 def 处理(事件)，
+              收到点击时被机器人自动调用(事件.主体含 value/user_id 等)；点击类型将自动置为 return-val。
     返回:
         按钮元素字典，只能放入 action-group 模块的 elements 列表。
     异常:
-        ValueError: 文本为空或点击类型、文本类型不合法。
+        ValueError: 文本为空、点击类型/文本类型不合法、绑定回调但缺值，或 link 按钮绑定回调。
     """
     if not 文本:
         raise ValueError("按钮文本不能为空")
@@ -90,6 +95,15 @@ def 创建按钮元素(文本: str, 值: str = "", 点击类型: str = "", 主�
         raise ValueError("点击类型只能为 link 或 return-val")
     if 文本类型 not in {"plain-text", "kmarkdown"}:
         raise ValueError("按钮文本类型只能为 plain-text 或 kmarkdown")
+    if 回调 is not None:
+        if not 值:
+            raise ValueError("绑定回调的按钮必须提供非空的 值 字段")
+        if 点击类型 == "link":
+            raise ValueError("link 按钮跳转链接，不能绑定回调；请去掉 回调 参数")
+        if 点击类型 == "":
+            点击类型 = "return-val"  # 有回调时默认回传 value，保证点击事件可触发
+        # 登记回调(以 value 为键，覆盖式)，点击事件到达后由机器人取出调用
+        按钮回调中心.注册(值, 回调)
     # 文本内容字典，作为按钮的子元素 text
     文本元素: dict[str, Any] = {"type": 文本类型, "content": 文本}
     return {"type": "button", "theme": 主题, "value": 值, "click": 点击类型, "text": 文本元素}
